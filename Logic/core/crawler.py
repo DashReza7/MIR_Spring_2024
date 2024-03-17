@@ -4,16 +4,15 @@ from collections import deque
 from concurrent.futures import ThreadPoolExecutor, wait
 from threading import Lock
 import json
-  
+
 
 class IMDbCrawler:
     """
     put your own user agent in the headers
     """
-    headers = {
-        'User-Agent': None
-    }
-    top_250_URL = 'https://www.imdb.com/chart/top/'
+
+    headers = {"User-Agent": None}
+    top_250_URL = "https://www.imdb.com/chart/top/"
 
     def __init__(self, crawling_threshold=1000):
         """
@@ -47,7 +46,7 @@ class IMDbCrawler:
             The id of the site
         """
         # TODO
-        return URL.split('/')[4]
+        return URL.split("/")[4]
 
     def write_to_file_as_json(self):
         """
@@ -61,10 +60,10 @@ class IMDbCrawler:
         Read the crawled files from json
         """
         # TODO
-        with open('IMDB_crawled.json', 'r') as f:
+        with open("IMDB_crawled.json", "r") as f:
             self.crawled = None
 
-        with open('IMDB_not_crawled.json', 'w') as f:
+        with open("IMDB_not_crawled.json", "w") as f:
             self.not_crawled = None
 
         self.added_ids = None
@@ -91,33 +90,32 @@ class IMDbCrawler:
         """
         # TODO update self.not_crawled and self.added_ids
 
-
     def get_imdb_instance(self):
         return {
-            'id': None,  # str
-            'title': None,  # str
-            'first_page_summary': None,  # str
-            'release_year': None,  # str
-            'mpaa': None,  # str
-            'budget': None,  # str
-            'gross_worldwide': None,  # str
-            'rating': None,  # str
-            'directors': None,  # List[str]
-            'writers': None,  # List[str]
-            'stars': None,  # List[str]
-            'related_links': None,  # List[str]
-            'genres': None,  # List[str]
-            'languages': None,  # List[str]
-            'countries_of_origin': None,  # List[str]
-            'summaries': None,  # List[str]
-            'synopsis': None,  # List[str]
-            'reviews': None,  # List[List[str]]
+            "id": None,  # str
+            "title": None,  # str
+            "first_page_summary": None,  # str
+            "release_year": None,  # str
+            "mpaa": None,  # str
+            "budget": None,  # str
+            "gross_worldwide": None,  # str
+            "rating": None,  # str
+            "directors": None,  # List[str]
+            "writers": None,  # List[str]
+            "stars": None,  # List[str]
+            "related_links": None,  # List[str]
+            "genres": None,  # List[str]
+            "languages": None,  # List[str]
+            "countries_of_origin": None,  # List[str]
+            "summaries": None,  # List[str]
+            "synopsis": None,  # List[str]
+            "reviews": None,  # List[List[str]]
         }
 
     def start_crawling(self):
         """
         Start crawling the movies until the crawling threshold is reached.
-        TODO: 
+        TODO:
             replace WHILE_LOOP_CONSTRAINTS with the proper constraints for the while loop.
             replace NEW_URL with the new URL to crawl.
             replace THERE_IS_NOTHING_TO_CRAWL with the condition to check if there is nothing to crawl.
@@ -148,7 +146,7 @@ class IMDbCrawler:
         """
         Main Logic of the crawler. It crawls the page and extracts the information of the movie.
         Use related links of a movie to crawl more movies.
-        
+
         Parameters
         ----------
         URL: str
@@ -172,23 +170,23 @@ class IMDbCrawler:
             The URL of the site
         """
         # TODO
-        movie['title'] = None
-        movie['first_page_summary'] = None
-        movie['release_year'] = None
-        movie['mpaa'] = None
-        movie['budget'] = None
-        movie['gross_worldwide'] = None
-        movie['directors'] = None
-        movie['writers'] = None
-        movie['stars'] = None
-        movie['related_links'] = None
-        movie['genres'] = None
-        movie['languages'] = None
-        movie['countries_of_origin'] = None
-        movie['rating'] = None
-        movie['summaries'] = None
-        movie['synopsis'] = None
-        movie['reviews'] = None
+        movie["title"] = None
+        movie["first_page_summary"] = None
+        movie["release_year"] = None
+        movie["mpaa"] = None
+        movie["budget"] = None
+        movie["gross_worldwide"] = None
+        movie["directors"] = None
+        movie["writers"] = None
+        movie["stars"] = None
+        movie["related_links"] = None
+        movie["genres"] = None
+        movie["languages"] = None
+        movie["countries_of_origin"] = None
+        movie["rating"] = None
+        movie["summaries"] = None
+        movie["synopsis"] = None
+        movie["reviews"] = None
 
     def get_summary_link(url):
         """
@@ -559,5 +557,5 @@ def main():
     imdb_crawler.write_to_file_as_json()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__": 
     main()
