@@ -7,7 +7,8 @@ class IMDbCrawler:
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"}
     top_250_URL = "https://www.imdb.com/chart/top/"
     crawled_file_path = "IMDB_Crawled.json"
-    
+    not_crawled_file_path = "IMDB_Not_Crawled.json"
+    added_ids_path = "Added_ids_path.json"
 
     def __init__(self, crawling_threshold=1000):
         """
@@ -49,6 +50,10 @@ class IMDbCrawler:
         try:
             with open(self.crawled_file_path, "w") as json_file:
                 json.dump(self.crawled, json_file)
+            with open(self.not_crawled_file_path, "w") as json_file:
+                json.dump(self.not_crawled, json_file)
+            with open(self.added_ids_path, "w") as json_file:
+                json.dump(self.added_ids, json_file)
         except IOError as e:
             print("Error writing to JSON file: ", e)
 
@@ -146,6 +151,9 @@ class IMDbCrawler:
             URL = self.get_url_from_id(self.not_crawled[0])
             self.not_crawled.remove(self.not_crawled[0])
             self.crawl_page_info(URL)
+            self.write_to_file_as_json()
+
+    
 
     def crawl_page_info(self, URL):
         """
