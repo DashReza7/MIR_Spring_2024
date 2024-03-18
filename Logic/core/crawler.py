@@ -22,7 +22,7 @@ class IMDbCrawler:
         self.crawling_threshold = crawling_threshold
         self.not_crawled = []
         self.crawled = []
-        self.added_ids = set()
+        self.added_ids = []
 
     def get_id_from_URL(self, URL):
         """
@@ -64,12 +64,12 @@ class IMDbCrawler:
         try:
             with open(self.crawled_file_path, "r") as f:
                 self.crawled = json.load(f)
-            # with open(self.not_crawled_file_path, "w") as f:
-                # self.not_crawled = None
+            with open(self.not_crawled_file_path, "r") as f:
+                self.not_crawled = json.load(f)
+            with open(self.added_ids_path, "r") as f:
+                self.added_ids = json.load(f)
         except IOError as e:
             print("Error reading from JSON file: ", e)
-        # TODO
-        # self.added_ids = None
 
     def crawl(self, URL):
         """
@@ -98,13 +98,9 @@ class IMDbCrawler:
             movie_links = tmp_soup.find_all("a", href=True, attrs={"class": "ipc-lockup-overlay ipc-focusable"})
             movie_links_list = [f"https://www.imdb.com{link['href']}" for link in movie_links]
 
-            cnt = 0
             for movie_link in movie_links_list:
-                if cnt > 2:
-                    return
-                self.added_ids.add(self.get_id_from_URL(movie_link))
+                self.added_ids.append(self.get_id_from_URL(movie_link))
                 self.not_crawled.append(self.get_id_from_URL(movie_link))
-                cnt += 1
                 
         except requests.RequestException as e:
             print("Error fetching page: ", e)
@@ -146,14 +142,11 @@ class IMDbCrawler:
         You are free to use it or not. If used, not to forget safe access to the shared resources.
         """
         self.extract_top_250()
-        
         for i in range(self.crawling_threshold):
             URL = self.get_url_from_id(self.not_crawled[0])
             self.not_crawled.remove(self.not_crawled[0])
             self.crawl_page_info(URL)
             self.write_to_file_as_json()
-
-    
 
     def crawl_page_info(self, URL):
         """
@@ -165,12 +158,12 @@ class IMDbCrawler:
         URL: str
             The URL of the site
         """
-        print("new iteration")
         new_movie = self.get_imdb_instance()
         self.extract_movie_info(self.crawl(URL), new_movie, URL)
+        print(new_movie["title"])
         for related_movie_id in new_movie["related_links"]:
             if related_movie_id not in self.added_ids:
-                self.added_ids.add(related_movie_id)
+                self.added_ids.append(related_movie_id)
                 self.not_crawled.append(related_movie_id)
         self.crawled.append(new_movie)
 
