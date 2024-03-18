@@ -92,9 +92,15 @@ class IMDbCrawler:
             tmp_soup = BeautifulSoup(response.text, "html.parser")
             movie_links = tmp_soup.find_all("a", href=True, attrs={"class": "ipc-lockup-overlay ipc-focusable"})
             movie_links_list = [f"https://www.imdb.com{link['href']}" for link in movie_links]
+
+            cnt = 0
             for movie_link in movie_links_list:
+                if cnt > 2:
+                    return
                 self.added_ids.add(self.get_id_from_URL(movie_link))
                 self.not_crawled.append(self.get_id_from_URL(movie_link))
+                cnt += 1
+                
         except requests.RequestException as e:
             print("Error fetching page: ", e)
         except AttributeError as e:
@@ -641,8 +647,9 @@ class IMDbCrawler:
         """
         element = soup.find("script", id="__NEXT_DATA__", type="application/json")
         data = json.loads(element.contents[0])
-        foo = str(data["props"]["pageProps"]["mainColumnData"]["productionBudget"]["budget"]["amount"])
-        return foo
+        if data["props"]["pageProps"]["mainColumnData"]["productionBudget"] is None:
+            return None
+        return str(data["props"]["pageProps"]["mainColumnData"]["productionBudget"]["budget"]["amount"])
         # try:
             ## TODO
             # pass
@@ -674,8 +681,7 @@ class IMDbCrawler:
 
 
 def main():
-    # imdb_crawler = IMDbCrawler(crawling_threshold=600)
-    imdb_crawler = IMDbCrawler(crawling_threshold=10)
+    imdb_crawler = IMDbCrawler(crawling_threshold=600)
     # imdb_crawler.read_from_file_as_json()
     imdb_crawler.start_crawling()
     imdb_crawler.write_to_file_as_json()
