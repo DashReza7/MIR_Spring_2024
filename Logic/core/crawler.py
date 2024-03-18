@@ -1,8 +1,5 @@
 import requests
 from bs4 import BeautifulSoup
-# from collections import deque
-from concurrent.futures import ThreadPoolExecutor, wait
-from threading import Lock
 import json
 
 
@@ -25,8 +22,6 @@ class IMDbCrawler:
         self.not_crawled = []
         self.crawled = []
         self.added_ids = set()
-        self.add_list_lock = Lock()
-        self.add_queue_lock = Lock()
 
     def get_id_from_URL(self, URL):
         """
@@ -139,21 +134,12 @@ class IMDbCrawler:
         ThreadPoolExecutor is used to make the crawler faster by using multiple threads to crawl the pages.
         You are free to use it or not. If used, not to forget safe access to the shared resources.
         """
-
-
         self.extract_top_250()
-        futures = []
-        crawled_counter = 0
-
-        with ThreadPoolExecutor(max_workers=20) as executor:
-            while crawled_counter < self.crawling_threshold:
-                URL = self.get_url_from_id(self.not_crawled[0])
-                self.not_crawled.remove(self.not_crawled[0])
-                futures.append(executor.submit(self.crawl_page_info, URL))
-                crawled_counter += 1
-                if len(self.not_crawled) == 0:
-                    wait(futures)
-                    futures = []
+        
+        for i in range(self.crawling_threshold):
+            URL = self.get_url_from_id(self.not_crawled[0])
+            self.not_crawled.remove(self.not_crawled[0])
+            self.crawl_page_info(URL)
 
     def crawl_page_info(self, URL):
         """
@@ -168,12 +154,11 @@ class IMDbCrawler:
         print("new iteration")
         new_movie = self.get_imdb_instance()
         self.extract_movie_info(self.crawl(URL), new_movie, URL)
-        with self.add_queue_lock:
-            for related_movie_id in new_movie["related_links"]:
-                if related_movie_id not in self.added_ids:
-                    self.added_ids.add(related_movie_id)
-                    self.not_crawled.append(related_movie_id)
-            self.crawled.append(new_movie)
+        for related_movie_id in new_movie["related_links"]:
+            if related_movie_id not in self.added_ids:
+                self.added_ids.add(related_movie_id)
+                self.not_crawled.append(related_movie_id)
+        self.crawled.append(new_movie)
 
     def extract_movie_info(self, res, movie, URL):
         """
@@ -189,11 +174,11 @@ class IMDbCrawler:
             The URL of the site
         """
         soup = BeautifulSoup(res.text, "html.parser")
+        movie["id"] = self.get_id_from_URL(URL)
         movie["title"] = self.get_title(soup)
-        print(self.get_title(soup))
         movie["first_page_summary"] = self.get_first_page_summary(soup)
         movie["release_year"] = self.get_release_year(soup)
-        movie["mpaa"] = self.get_mpaa(soup)
+        movie["mpaa"] = self.get_mpaa(URL)
         movie["budget"] = self.get_budget(soup)
         movie["gross_worldwide"] = self.get_gross_worldwide(soup)
         movie["directors"] = self.get_director(soup)
@@ -410,7 +395,7 @@ class IMDbCrawler:
         """
         summary_page_url = self.get_summary_link(URL)
         r = requests.get(summary_page_url, headers=self.headers)
-        soup = BeautifulSoup(r, "html.parser")        
+        soup = BeautifulSoup(r.text, "html.parser")        
         element = soup.find("script", id="__NEXT_DATA__", type="application/json")
         data = json.loads(element.contents[0])
         foo = data["props"]["pageProps"]["contentData"]["categories"]
@@ -443,7 +428,7 @@ class IMDbCrawler:
         """
         summary_page_url = self.get_summary_link(URL)
         r = requests.get(summary_page_url, headers=self.headers)
-        soup = BeautifulSoup(r, "html.parser")        
+        soup = BeautifulSoup(r.text, "html.parser")
         element = soup.find("script", id="__NEXT_DATA__", type="application/json")
         data = json.loads(element.contents[0])
         foo = data["props"]["pageProps"]["contentData"]["categories"]
@@ -477,8 +462,15 @@ class IMDbCrawler:
         """
         review_link = self.get_review_link(URL)
         r = requests.get(review_link, headers=self.headers)
-        soup = BeautifulSoup(r, "html.parser")
-
+        soup = BeautifulSoup(r.text, "html.parser")
+        bar = []
+        element = soup.find_all("div", attrs={"class": "review-container"})
+        for foo in element:
+            title = foo.find_next("a", attrs={"class": "title"}).get_text()
+            body = foo.find_next("div", attrs={"class": "text show-more__control"}).get_text()
+            rating = foo.find_next("span", attrs={"class": "rating-other-user-rating"}).get_text()
+            bar.append([f"{title}{body}".strip(), str(rating).strip()])
+        return bar
         # try:
             ## TODO
             # pass
@@ -499,7 +491,7 @@ class IMDbCrawler:
             The genres of the movie
         """
         element = soup.find("script", type="application/ld+json")
-        data = json.loads(element[0])
+        data = json.loads(element.contents[0])
         foo = data["genre"]
         genres = []
         for bar in foo:
@@ -525,7 +517,7 @@ class IMDbCrawler:
             The rating of the movie
         """
         element = soup.find("script", type="application/ld+json")
-        data = json.loads(element[0])
+        data = json.loads(element.contents[0])
         return str(data["aggregateRating"]["ratingValue"])
         # try:
             ## TODO
@@ -533,7 +525,7 @@ class IMDbCrawler:
         # except:
             # print("failed to get rating")
 
-    def get_mpaa(self, soup):
+    def get_mpaa(self, URL):
         """
         Get the MPAA of the movie from the soup
 
@@ -546,11 +538,18 @@ class IMDbCrawler:
         str
             The MPAA of the movie
         """
-        try:
-            # TODO
-            pass
-        except:
-            print("failed to get mpaa")
+        mpaa_url = f"{URL}/parentalguide"
+        r = requests.get(mpaa_url, headers=self.headers)
+        soup = BeautifulSoup(r.text, "html.parser")
+        element = soup.find("tr", id="mpaa-rating")
+        if element is None:
+            return None
+        return str(element.contents[3].get_text())
+        # try:
+            ## TODO
+            # pass
+        # except:
+            # print("failed to get mpaa")
 
     def get_release_year(self, soup):
         """
