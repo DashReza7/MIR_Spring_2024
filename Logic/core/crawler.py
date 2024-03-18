@@ -98,7 +98,7 @@ class IMDbCrawler:
             movie_links = tmp_soup.find_all("a", href=True, attrs={"class": "ipc-lockup-overlay ipc-focusable"})
             movie_links_list = [f"https://www.imdb.com{link['href']}" for link in movie_links]
             for movie_link in movie_links_list:
-                self.added_ids.append(self.get_id_from_URL(movie_link))
+                self.added_ids.add(self.get_id_from_URL(movie_link))
                 self.not_crawled.append(self.get_id_from_URL(movie_link))
         except requests.RequestException as e:
             print("Error fetching page: ", e)
@@ -140,10 +140,6 @@ class IMDbCrawler:
         You are free to use it or not. If used, not to forget safe access to the shared resources.
         """
 
-        # help variables
-        WHILE_LOOP_CONSTRAINTS = None
-        NEW_URL = None
-        THERE_IS_NOTHING_TO_CRAWL = None
 
         self.extract_top_250()
         futures = []
@@ -151,9 +147,11 @@ class IMDbCrawler:
 
         with ThreadPoolExecutor(max_workers=20) as executor:
             while crawled_counter < self.crawling_threshold:
-                URL = NEW_URL
+                URL = self.get_url_from_id(self.not_crawled[0])
+                self.not_crawled.remove(self.not_crawled[0])
                 futures.append(executor.submit(self.crawl_page_info, URL))
-                if THERE_IS_NOTHING_TO_CRAWL:
+                crawled_counter += 1
+                if len(self.not_crawled) == 0:
                     wait(futures)
                     futures = []
 
@@ -170,13 +168,11 @@ class IMDbCrawler:
         print("new iteration")
         new_movie = self.get_imdb_instance()
         self.extract_movie_info(self.crawl(URL), new_movie, URL)
-        self.crawled.append(new_movie)
         with self.add_queue_lock:
             for related_movie_id in new_movie["related_links"]:
                 if related_movie_id not in self.added_ids:
                     self.added_ids.add(related_movie_id)
                     self.not_crawled.append(related_movie_id)
-            self.not_crawled.remove(self.get_id_from_URL(URL))
             self.crawled.append(new_movie)
 
     def extract_movie_info(self, res, movie, URL):
@@ -194,6 +190,7 @@ class IMDbCrawler:
         """
         soup = BeautifulSoup(res.text, "html.parser")
         movie["title"] = self.get_title(soup)
+        print(self.get_title(soup))
         movie["first_page_summary"] = self.get_first_page_summary(soup)
         movie["release_year"] = self.get_release_year(soup)
         movie["mpaa"] = self.get_mpaa(soup)
@@ -678,7 +675,8 @@ class IMDbCrawler:
 
 
 def main():
-    imdb_crawler = IMDbCrawler(crawling_threshold=600)
+    # imdb_crawler = IMDbCrawler(crawling_threshold=600)
+    imdb_crawler = IMDbCrawler(crawling_threshold=10)
     # imdb_crawler.read_from_file_as_json()
     imdb_crawler.start_crawling()
     imdb_crawler.write_to_file_as_json()
