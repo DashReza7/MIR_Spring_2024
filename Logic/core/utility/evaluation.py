@@ -66,10 +66,13 @@ class Evaluation:
         float
             The F1 score of the predicted results    
         """
+        p = self.calculate_precision(actual=actual, predicted=predicted)
+        r = self.calculate_recall(actual=actual, predicted=predicted)
         f1 = 0.0
-
-        # TODO: Calculate F1 here
-
+        if p == 0 and r == 0:
+            f1 = 0
+        else:
+            f1 = (2 * p * r) / (p + r)
         return f1
     
     def calculate_AP(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
@@ -205,7 +208,7 @@ class Evaluation:
         return MRR
     
 
-    def print_evaluation(self, precision, recall, f1, ap, map, dcg, ndcg, rr, mrr):
+    def print_evaluation(self, precision, recall, f1, ap, MAP, dcg, ndcg, rr, mrr):
         """
         Prints the evaluation metrics
 
@@ -231,9 +234,16 @@ class Evaluation:
             The Mean Reciprocal Rank of the predicted results
             
         """
-        print(f"name = {self.name}")
-
-        #TODO: Print the evaluation metrics
+        print(f"name = {self.name}\n")
+        print(f'precision = {precision}')
+        print(f'recall = {recall}')
+        print(f'f1 = {f1}')
+        print(f'ap = {ap}')
+        print(f'map = {MAP}')
+        print(f'dcg = {dcg}')
+        print(f'ndcg = {ndcg}')
+        print(f'rr = {rr}')
+        print(f'mrr = {mrr}')
       
 
     def log_evaluation(self, precision, recall, f1, ap, map, dcg, ndcg, rr, mrr):
