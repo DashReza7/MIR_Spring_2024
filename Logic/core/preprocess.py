@@ -1,4 +1,9 @@
-
+import nltk
+from nltk.stem import WordNetLemmatizer, PorterStemmer
+import re
+from copy import deepcopy
+import os
+import json
 
 class Preprocessor:
 
@@ -13,7 +18,9 @@ class Preprocessor:
         """
         # TODO
         self.documents = documents
-        self.stopwords = []
+        self.stopwords = ["\bthis\b", "\bthat\b", "\babout\b", "\bwhom\b", "\bbeing\b", "\bwhere\b", "\bwhy\b", "\bhad\b", "\bshould\b", "\beach\b"]
+        self.stemmer = PorterStemmer()
+        self.lemmatizer = WordNetLemmatizer()
 
     def preprocess(self):
         """
@@ -24,8 +31,33 @@ class Preprocessor:
         List[str]
             The preprocessed documents.
         """
-         # TODO
-        return
+        documents = deepcopy(self.documents)
+        for doc in documents:
+            fields = ["title", "first_page_summary", "mpaa"]
+            for field in fields:
+                if doc[field] is None:
+                    continue
+                doc[field] = self.remove_links(doc[field])
+                doc[field] = self.remove_punctuations(doc[field])
+                doc[field] = self.normalize(doc[field])
+                doc[field] = self.remove_stopwords(doc[field])
+            fields = ["genres", "languages", "countries_of_origin", "summaries", "synopsis"]
+            for field in fields:
+                if doc[field] is None:
+                    continue
+                for i in range(len(doc[field])):
+                    doc[field][i] = self.remove_links(doc[field][i])
+                    doc[field][i] = self.remove_punctuations(doc[field][i])
+                    doc[field][i] = self.normalize(doc[field][i])
+                    doc[field][i] = self.remove_stopwords(doc[field][i])
+            fields = ["directors", "writers", "stars"]
+            for field in fields:
+                if doc[field] is None:
+                    continue
+                for i in range(len(doc[field])):
+                    doc[field][i] = doc[field][i].lower()
+                
+        return documents
 
     def normalize(self, text: str):
         """
@@ -41,12 +73,18 @@ class Preprocessor:
         str
             The normalized text.
         """
-        # TODO
-        return
+        text = text.lower()
+        # tokenization
+        tokens = self.tokenize(text)
+        # stemming
+        stemmed = [self.stemmer.stem(token) for token in tokens]
+        # lemmatization of the stemmed tokens
+        lemmatized = [self.lemmatizer.lemmatize(stemmed_token) for stemmed_token in stemmed]
+        return " ".join(lemmatized)
 
     def remove_links(self, text: str):
         """
-        Remove links from the text.
+        Remove links (and HTML tags) from the text.
 
         Parameters
         ----------
@@ -58,13 +96,16 @@ class Preprocessor:
         str
             The text with links removed.
         """
-        patterns = [r'\S*http\S*', r'\S*www\S*', r'\S+\.ir\S*', r'\S+\.com\S*', r'\S+\.org\S*', r'\S*@\S*']
-        # TODO
-        return
+        # patterns = [r'\S*http\S*', r'\S*www\S*', r'\S+\.ir\S*', r'\S+\.com\S*', r'\S+\.org\S*', r'\S*@\S*']
+        patterns = [r'http\S*', r'www\S*', r'\S+\.com\S*', r'\S+\.org\S*', r'\S*@\S*']
+        clean_text = re.sub("<[^<]+?>","", text)
+        for pattern in patterns:
+            clean_text = re.sub(pattern, "", clean_text)
+        return clean_text
 
     def remove_punctuations(self, text: str):
         """
-        Remove punctuations from the text.
+        Remove punctuations and HTML and Unicode characters from the text.
 
         Parameters
         ----------
@@ -76,8 +117,11 @@ class Preprocessor:
         str
             The text with punctuations removed.
         """
-        # TODO
-        return
+        text = re.sub(r"\n", " ", text)
+        text = re.sub(r"&#[0-9]+;", " ", text)
+        text = re.sub(r"[\u0080-\uffff]", " ", text)
+        text = re.sub(r"[^\w\s]", " ", text)
+        return text
 
     def tokenize(self, text: str):
         """
@@ -93,8 +137,7 @@ class Preprocessor:
         list
             The list of words.
         """
-        # TODO
-        return
+        return nltk.word_tokenize(text)
 
     def remove_stopwords(self, text: str):
         """
@@ -110,6 +153,17 @@ class Preprocessor:
         list
             The list of words with stopwords removed.
         """
-        # TODO
-        return
+        for stopword in self.stopwords:
+            pattern = re.compile(stopword, re.IGNORECASE)
+            text = re.sub(pattern, "", text)
+        return text
 
+if __name__ == "__main__":
+    documents = None
+    with open(os.getcwd() + "/Logic/tests/CrawlerResults/IMDB_Crawled.json", "r") as file:
+        documents = json.load(file)
+    preprocessor = Preprocessor(documents)
+    preprocessed_documents = preprocessor.preprocess()
+    with open(os.getcwd() + "/Logic/Data/PreprocessedDocuments.json", "w") as file:
+        json.dump(preprocessed_documents, file)
+    print("the end!")
