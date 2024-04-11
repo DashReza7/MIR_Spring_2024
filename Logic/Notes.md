@@ -29,3 +29,4 @@ Indexing is good
  - stars are only being lowercased. No other preprocessing
  - What should be the `index document` function in `index.py`
  - Crawled genres are a little broken
+ - Check the `jaccard_score` in `LSH` and `spell_correction`. It might be broken when one set or both of them are empty

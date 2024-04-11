@@ -154,6 +154,9 @@ class MinHashLSH:
         float
             Jaccard score.
         """
+        # TODO: is this true?
+        if len(first_set) == 0 or len(second_set) == 0:
+            return 0
         union_set = set()
         union_set.update(first_set)
         union_set.update(second_set)
