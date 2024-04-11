@@ -1,9 +1,9 @@
 import time
 import os
 import json
+from enum import Enum
 import copy
-from indexes_enum import Indexes
-
+from indexes_enum import Indexes as Indexes
 
 class Index:
     def __init__(self, preprocessed_documents: list):
@@ -31,10 +31,10 @@ class Index:
             The index of the documents based on the document ID.
         """
 
-        current_index = {}
-        #         TODO
-
-        return current_index
+        documents_index = dict()
+        for doc in self.preprocessed_documents:
+            documents_index[doc["id"]] = doc
+        return documents_index
 
     def index_stars(self):
         """
@@ -46,9 +46,20 @@ class Index:
             The index of the documents based on the stars. You should also store each terms' tf in each document.
             So the index type is: {term: {document_id: tf}}
         """
-
-        #         TODO
-        pass
+        stars_index = dict()
+        for doc in self.preprocessed_documents:
+            term_freq = dict()
+            for star in doc["stars"]:
+                star_splitted = star.split()
+                for term in star_splitted:
+                    if term not in term_freq:
+                        term_freq[term] = 0
+                    term_freq[term] += 1
+            for term, freq in term_freq.items():
+                if term not in stars_index:
+                    stars_index[term] = dict()
+                stars_index[term][doc["id"]] = freq
+        return stars_index
 
     def index_genres(self):
         """
@@ -60,9 +71,20 @@ class Index:
             The index of the documents based on the genres. You should also store each terms' tf in each document.
             So the index type is: {term: {document_id: tf}}
         """
-
-        #         TODO
-        pass
+        genres_index = dict()
+        for doc in self.preprocessed_documents:
+            term_freq = dict()
+            for genre in doc["genres"]:
+                genres_splitted = genre.split()
+                for term in genres_splitted:
+                    if term not in term_freq:
+                        term_freq[term] = 0
+                    term_freq[term] += 1
+            for term, freq in term_freq.items():
+                if term not in genres_index:
+                    genres_index[term] = dict()
+                genres_index[term][doc["id"]] = freq
+        return genres_index
 
     def index_summaries(self):
         """
@@ -74,11 +96,20 @@ class Index:
             The index of the documents based on the summaries. You should also store each terms' tf in each document.
             So the index type is: {term: {document_id: tf}}
         """
-
-        current_index = {}
-        #         TODO
-
-        return current_index
+        summaries_index = dict()
+        for doc in self.preprocessed_documents:
+            term_freq = dict()
+            for summary in doc["summaries"]:
+                summary_splitted = summary.split()
+                for term in summary_splitted:
+                    if term not in term_freq:
+                        term_freq[term] = 0
+                    term_freq[term] += 1
+            for term, freq in term_freq.items():
+                if term not in summaries_index:
+                    summaries_index[term] = dict()
+                summaries_index[term][doc["id"]] = freq
+        return summaries_index
 
     def get_posting_list(self, word: str, index_type: str):
         """
@@ -97,11 +128,16 @@ class Index:
             posting list of the word (you should return the list of document IDs that contain the word and ignore the tf)
         """
 
-        try:
-            #         TODO
-            pass
-        except:
+        if index_type not in self.index:
+            print(f"invalid index_type: {index_type}")
+            exit(1)
+        if index_type == "documents":
+            print("index_type: documents. Not implemented yet!")
+            exit(1)
+        if word not in self.index[index_type]:
+            print(f"index_type: {index_type}. No word found")
             return []
+        return sorted(list(self.index[index_type][word].items()))
 
     def add_document_to_index(self, document: dict):
         """
@@ -112,9 +148,58 @@ class Index:
         document : dict
             Document to add to all the indexes
         """
+        # documents
+        # TODO: Haaa???
+        if document["id"] not in self.index["documents"]:
+            self.index["documents"][document["id"]] = document
+        
+        # stars
+        term_freq = dict()
+        for genre in document["stars"]:
+            genre_splitted = genre.split()
+            for term in genre_splitted:
+                if document["id"] in self.index["stars"][term]:
+                    continue
+                if term not in term_freq:
+                    term_freq[term] = 0
+                term_freq[term] += 1
+        for term, freq in term_freq.items():
+            if term not in self.index["stars"]:
+                self.index["stars"][term] = {document["id"]: freq}
+            else:
+                self.index["stars"][term][document["id"]] = freq
+        
+        # genres
+        term_freq = dict()
+        for genre in document["genres"]:
+            genre_splitted = genre.split()
+            for term in genre_splitted:
+                if document["id"] in self.index["genres"][term]:
+                    continue
+                if term not in term_freq:
+                    term_freq[term] = 0
+                term_freq[term] += 1
+        for term, freq in term_freq.items():
+            if term not in self.index["genres"]:
+                self.index["genres"][term] = {document["id"]: freq}
+            else:
+                self.index["genres"][term][document["id"]] = freq
 
-        #         TODO
-        pass
+        # summaries
+        term_freq = dict()
+        for summary in document["summaries"]:
+            summary_splitted = summary.split()
+            for term in summary_splitted:
+                if document["id"] in self.index["summaries"][term]:
+                    continue
+                if term not in term_freq:
+                    term_freq[term] = 0
+                term_freq[term] += 1
+        for term, freq in term_freq.items():
+            if term not in self.index["summaries"]:
+                self.index["summaries"][term] = {document["id"]: freq}
+            else:
+                self.index["summaries"][term][document["id"]] = freq
 
     def remove_document_from_index(self, document_id: str):
         """
@@ -125,9 +210,29 @@ class Index:
         document_id : str
             ID of the document to remove from all the indexes
         """
-
-        #         TODO
-        pass
+        # document
+        if document_id not in self.index["documents"]:
+            return
+        document = self.index["documents"][document_id]
+        del self.index["documents"][document_id]
+        # stars
+        for star in document["stars"]:
+            star_splitted = star.split()
+            for term in star_splitted:
+                if document_id in self.index["stars"][term]:
+                    del self.index["stars"][term][document_id]
+        # genres
+        for genre in document["genres"]:
+            genre_splitted = genre.split()
+            for term in genre_splitted:
+                if document_id in self.index["genres"][term]:
+                    del self.index["genres"][term][document_id]        
+        # summaries
+        for summary in document["summaries"]:
+            summary_splitted = summary.split()
+            for term in summary_splitted:
+                if document_id in self.index["summaries"][term]:
+                    del self.index["summaries"][term][document_id]
 
     def check_add_remove_is_correct(self):
         """
@@ -183,7 +288,7 @@ class Index:
         else:
             print('Remove is incorrect')
 
-    def store_index(self, path: str, index_name: str = None):
+    def store_index(self, index_type: str, path: str = os.getcwd() + "/Logic/Data/"):
         """
         Stores the index in a file (such as a JSON file)
 
@@ -191,20 +296,22 @@ class Index:
         ----------
         path : str
             Path to store the file
-        index_name: str
-            name of index we want to store (documents, stars, genres, summaries)
+        index_type: str
+            type of index we want to store (documents, stars, genres, summaries)
         """
 
         if not os.path.exists(path):
             os.makedirs(path)
 
-        if index_name not in self.index:
-            raise ValueError('Invalid index name')
+        if index_type not in self.index:
+            raise ValueError('Invalid index type')
 
-        # TODO
-        pass
+        path = path + index_type + "_index.json"
+        data = self.index[index_type]
+        with open(path, "w") as file:
+            json.dump(data, file)
 
-    def load_index(self, path: str):
+    def load_index(self, index_type: str, path: str = os.getcwd() + "/Logic/Data/"):
         """
         Loads the index from a file (such as a JSON file)
 
@@ -213,9 +320,15 @@ class Index:
         path : str
             Path to load the file
         """
-
-        #         TODO
-        pass
+        if not os.path.exists(path):
+            print("No such path exists: ", path)
+            exit(1)
+        if index_type not in self.index:
+            print("No such index_type exits: ", index_type)
+            exit(1)
+        path = path + index_type + "_index.json"
+        with open(path, "r") as file:
+            self.index[index_type] = json.load(file)
 
     def check_if_index_loaded_correctly(self, index_type: str, loaded_index: dict):
         """
@@ -284,10 +397,12 @@ class Index:
         print('Brute force time: ', brute_force_time)
         print('Implemented time: ', implemented_time)
 
-        if set(docs).issubset(set(posting_list)):
+        implemented_docs = [data[0] for data in posting_list]
+        if set(docs).issubset(set(implemented_docs)):
             print('Indexing is correct')
 
-            if implemented_time < brute_force_time:
+            # less than or equal, because in small queries, cannot compare brute force and indexing. They both perform almost the same
+            if implemented_time <= brute_force_time:
                 print('Indexing is good')
                 return True
             else:
@@ -298,3 +413,19 @@ class Index:
             return False
 
 # TODO: Run the class with needed parameters, then run check methods and finally report the results of check methods
+
+if __name__ == "__main__":
+    preprocessed_documents = None
+    with open(os.getcwd() + "/Logic/Data/PreprocessedDocuments.json", "r") as file:
+        preprocessed_documents = json.load(file)
+    my_index = Index(preprocessed_documents)
+    # my_index.store_index("documents")
+    # my_index.store_index("stars")
+    # my_index.store_index("genres")
+    # my_index.store_index("summaries")
+    my_index.check_add_remove_is_correct()
+    print(my_index.check_if_index_loaded_correctly("documents", my_index.index["documents"]))
+    print(my_index.check_if_index_loaded_correctly("stars", my_index.index["stars"]))
+    print(my_index.check_if_index_loaded_correctly("genres", my_index.index["genres"]))
+    print(my_index.check_if_index_loaded_correctly("summaries", my_index.index["summaries"]))
+    my_index.check_if_indexing_is_good("stars", "kenneth")

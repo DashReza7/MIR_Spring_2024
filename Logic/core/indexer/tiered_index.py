@@ -1,10 +1,10 @@
-from .indexes_enum import Indexes, Index_types
-from .index_reader import Index_reader
+from indexes_enum import Indexes, Index_types
+from index_reader import Index_reader
 import json
-
+import os
 
 class Tiered_index:
-    def __init__(self, path="index/"):
+    def __init__(self, path):
         """
         Initializes the Tiered_index.
 
@@ -23,15 +23,13 @@ class Tiered_index:
         self.tiered_index = {
             Indexes.STARS: self.convert_to_tiered_index(3, 2, Indexes.STARS),
             Indexes.SUMMARIES: self.convert_to_tiered_index(10, 5, Indexes.SUMMARIES),
-            Indexes.GENRES: self.convert_to_tiered_index(1, 0, Indexes.GENRES)
+            Indexes.GENRES: self.convert_to_tiered_index(2, 1, Indexes.GENRES)
         }
         self.store_tiered_index(path, Indexes.STARS)
         self.store_tiered_index(path, Indexes.SUMMARIES)
         self.store_tiered_index(path, Indexes.GENRES)
 
-    def convert_to_tiered_index(
-        self, first_tier_threshold: int, second_tier_threshold: int, index_name
-    ):
+    def convert_to_tiered_index(self, first_tier_threshold: int, second_tier_threshold: int, index_name):
         """
         Convert the current index to a tiered index.
 
@@ -61,7 +59,21 @@ class Tiered_index:
         first_tier = {}
         second_tier = {}
         third_tier = {}
-        #TODO
+
+        for term in current_index:
+            if term not in first_tier:
+                first_tier[term] = dict()
+            if term not in second_tier:
+                second_tier[term] = dict()
+            if term not in third_tier:
+                third_tier[term] = dict()
+            for docID, tf in current_index[term].items():
+                if tf >= first_tier_threshold:
+                    first_tier[term][docID] = tf
+                elif tf >= second_tier_threshold:
+                    second_tier[term][docID] = tf
+                else:
+                    third_tier[term][docID] = tf        
         return {
             "first_tier": first_tier,
             "second_tier": second_tier,
@@ -78,6 +90,5 @@ class Tiered_index:
 
 
 if __name__ == "__main__":
-    tiered = Tiered_index(
-        path="index/"
-    )
+    tiered = Tiered_index(path = os.getcwd() + "/Logic/Data/")
+

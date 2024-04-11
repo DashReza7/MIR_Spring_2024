@@ -1,9 +1,10 @@
 import json
-from indexes_enum import Indexes,Index_types
+from indexes_enum import Indexes, Index_types
 from index_reader import Index_reader
+import os
 
 class DocumentLengthsIndex:
-    def __init__(self,path='index/'):
+    def __init__(self, path):
         """
         Initializes the DocumentLengthsIndex class.
 
@@ -39,8 +40,16 @@ class DocumentLengthsIndex:
             A dictionary of the document lengths. The keys are the document IDs, and the values are
             the document's length in that field (where).
         """
-
-        # TODO:
+        field = where
+        docID_docLen = dict()
+        for doc in self.documents_index.values():
+            cnt = 0
+            for str_ in doc[field]:
+                str_splitted = str_.split()
+                cnt += len(str_splitted)
+            docID_docLen[doc["id"]] = cnt
+        return docID_docLen
+        
     
     def store_document_lengths_index(self, path , index_name):
         """
@@ -59,5 +68,5 @@ class DocumentLengthsIndex:
     
 
 if __name__ == '__main__':
-    document_lengths_index = DocumentLengthsIndex()
+    document_lengths_index = DocumentLengthsIndex(os.getcwd() + "/Logic/Data/")
     print('Document lengths index stored successfully.')

@@ -28,3 +28,4 @@ Indexing is good
 ### Notes:
  - stars are only being lowercased. No other preprocessing
  - What should be the `index document` function in `index.py`
+ - Crawled genres are a little broken

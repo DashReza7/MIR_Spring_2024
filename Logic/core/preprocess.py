@@ -33,15 +33,7 @@ class Preprocessor:
         """
         documents = deepcopy(self.documents)
         for doc in documents:
-            fields = ["title", "first_page_summary", "mpaa"]
-            for field in fields:
-                if doc[field] is None:
-                    continue
-                doc[field] = self.remove_links(doc[field])
-                doc[field] = self.remove_punctuations(doc[field])
-                doc[field] = self.normalize(doc[field])
-                doc[field] = self.remove_stopwords(doc[field])
-            fields = ["genres", "languages", "countries_of_origin", "summaries", "synopsis"]
+            fields = ["genres", "summaries"]
             for field in fields:
                 if doc[field] is None:
                     continue
@@ -50,7 +42,7 @@ class Preprocessor:
                     doc[field][i] = self.remove_punctuations(doc[field][i])
                     doc[field][i] = self.normalize(doc[field][i])
                     doc[field][i] = self.remove_stopwords(doc[field][i])
-            fields = ["directors", "writers", "stars"]
+            fields = ["stars"]
             for field in fields:
                 if doc[field] is None:
                     continue
