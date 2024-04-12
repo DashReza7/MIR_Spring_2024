@@ -1,7 +1,6 @@
 import re
 import nltk
 from nltk.stem import WordNetLemmatizer, PorterStemmer
-from nltk.tokenize.treebank import TreebankWordDetokenizer
 
 class Snippet:
     def __init__(self, number_of_words_on_each_side=5):

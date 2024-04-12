@@ -1,10 +1,13 @@
 import json
 import numpy as np
-from .preprocess import Preprocessor
-from .scorer import Scorer
-from .indexes_enum import Indexes, Index_types
-from .index_reader import Index_reader
-
+from preprocess import Preprocessor
+from scorer import Scorer
+import os
+import sys
+sys.path.append(os.getcwd() + "/Logic/core/indexer/")
+from indexer.indexes_enum import Indexes, Index_types
+from indexer.index_reader import Index_reader
+from copy import deepcopy
 
 class SearchEngine:
     def __init__(self):
@@ -12,7 +15,7 @@ class SearchEngine:
         Initializes the search engine.
 
         """
-        path = '/index'
+        path = os.getcwd() + "/Logic/Data/"
         self.document_indexes = {
             Indexes.STARS: Index_reader(path, Indexes.STARS),
             Indexes.GENRES: Index_reader(path, Indexes.GENRES),
@@ -86,8 +89,13 @@ class SearchEngine:
         final_scores : dict
             The final scores of the documents.
         """
-        # TODO
-        pass
+        # TODO: probable bug
+        sum = 0.0
+        for field in weights:
+            for doc, score in scores[field.value].items():
+                if doc not in final_scores:
+                    final_scores[doc] = 0
+                final_scores[doc] += score * weights[field]
 
     def find_scores_with_unsafe_ranking(self, query, method, weights, max_results, scores):
         """
@@ -147,8 +155,13 @@ class SearchEngine:
         dict
             The merged dictionary of scores.
         """
-
-        #TODO
+        #TODO: probable bug
+        scores = deepcopy(scores1)
+        for k, v in scores2.items():
+            if k not in scores:
+                scores[k] = 0.0
+            scores[k] += v
+        return scores
 
 
 if __name__ == '__main__':

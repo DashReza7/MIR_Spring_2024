@@ -5,6 +5,7 @@ import os
 import re
 
 
-foo = ["hello", "world"]
-print("...".join(foo))
+foo = {1: 50, 2: 38}
+bar = foo.get(2, None)
+print(bar)
 
