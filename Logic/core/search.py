@@ -92,7 +92,7 @@ class SearchEngine:
         # TODO: probable bug
         sum = 0.0
         for field in weights:
-            for doc, score in scores[field.value].items():
+            for doc, score in scores[field].items():
                 if doc not in final_scores:
                     final_scores[doc] = 0
                 final_scores[doc] += score * weights[field]
@@ -116,8 +116,14 @@ class SearchEngine:
         """
         for field in weights:
             for tier in ["first_tier", "second_tier", "third_tier"]:
-                #TODO
-                pass
+                scorer = Scorer(self.tiered_index[field].index[tier], self.metadata_index.index["document_count"])
+                if method == "OkapiBM25":
+                    score = scorer.compute_socres_with_okapi_bm25(query, self.metadata_index.index["averge_document_length"][field.value], self.document_lengths_index[field].index)
+                else:
+                    score = scorer.compute_scores_with_vector_space_model(query, method)
+                scores[field] = self.merge_scores(scores[field], score)
+                if len(scores[field]) >= max_results:
+                    break
 
     def find_scores_with_safe_ranking(self, query, method, weights, scores):
         """
@@ -136,8 +142,12 @@ class SearchEngine:
         """
 
         for field in weights:
-            #TODO
-            pass
+            scorer = Scorer(self.document_indexes[field].index, self.metadata_index.index["document_count"])
+            if method == "OkapiBM25":
+                score = scorer.compute_socres_with_okapi_bm25(query, self.metadata_index.index['averge_document_length'][field.value], self.document_lengths_index[field].index)
+            else:
+                score = scorer.compute_scores_with_vector_space_model(query, method)
+            scores[field] = score
 
     def merge_scores(self, scores1, scores2):
         """
@@ -167,6 +177,7 @@ class SearchEngine:
 if __name__ == '__main__':
     search_engine = SearchEngine()
     query = "spider man in wonderland"
+    query = "tom holland spider man"
     method = "lnc.ltc"
     weights = {
         Indexes.STARS: 1,
@@ -174,5 +185,4 @@ if __name__ == '__main__':
         Indexes.SUMMARIES: 1
     }
     result = search_engine.search(query, method, weights)
-
     print(result)

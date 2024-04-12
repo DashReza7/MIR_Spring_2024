@@ -31,9 +31,20 @@ class Preprocessor:
         List[str]
             The preprocessed documents.
         """
+        if len(self.documents) == 0:
+            return []
+        if type(self.documents[0]) is str:
+            documents = deepcopy(self.documents)
+            for i, doc in enumerate(documents):
+                documents[i] = self.remove_links(documents[i])
+                documents[i] = self.remove_punctuations(documents[i])
+                documents[i] = self.normalize(documents[i])
+                documents[i] = self.remove_stopwords(documents[i])
+            return documents
+        
         documents = deepcopy(self.documents)
         for doc in documents:
-            fields = ["genres", "summaries"]
+            fields = ["genres", "summaries", "stars"]
             for field in fields:
                 if doc[field] is None:
                     continue
@@ -42,13 +53,12 @@ class Preprocessor:
                     doc[field][i] = self.remove_punctuations(doc[field][i])
                     doc[field][i] = self.normalize(doc[field][i])
                     doc[field][i] = self.remove_stopwords(doc[field][i])
-            fields = ["stars"]
+            fields = []
             for field in fields:
                 if doc[field] is None:
                     continue
                 for i in range(len(doc[field])):
-                    doc[field][i] = doc[field][i].lower()
-                
+                    doc[field][i] = doc[field][i].lower()   
         return documents
 
     def normalize(self, text: str):

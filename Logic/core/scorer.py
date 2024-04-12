@@ -68,12 +68,12 @@ class Scorer:
             if term not in self.index:
                 idf = 0
             else:
-                df = self.index[term]
-                if len(df) == 0:
+                df = len(self.index[term])
+                if df == 0:
                     idf = 0
                 else:
                     idf = np.log(self.N / df)
-            self.idf[term] = idf
+                self.idf[term] = idf
         return idf
     
     def get_query_tfs(self, query):

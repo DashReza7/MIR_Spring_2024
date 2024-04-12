@@ -4,6 +4,7 @@ import json
 from enum import Enum
 import copy
 from indexes_enum import Indexes as Indexes
+from nltk import PorterStemmer
 
 class Index:
     def __init__(self, preprocessed_documents: list):
@@ -155,9 +156,11 @@ class Index:
         
         # stars
         term_freq = dict()
-        for genre in document["stars"]:
-            genre_splitted = genre.split()
-            for term in genre_splitted:
+        for star in document["stars"]:
+            star_splitted = star.split()
+            for term in star_splitted:
+                if term not in self.index["stars"]: # TODO: probable bug
+                    self.index["stars"][term] = {}
                 if document["id"] in self.index["stars"][term]:
                     continue
                 if term not in term_freq:
@@ -174,6 +177,8 @@ class Index:
         for genre in document["genres"]:
             genre_splitted = genre.split()
             for term in genre_splitted:
+                if term not in self.index["genres"]:
+                    self.index["genres"][term] = {}
                 if document["id"] in self.index["genres"][term]:
                     continue
                 if term not in term_freq:
@@ -190,6 +195,8 @@ class Index:
         for summary in document["summaries"]:
             summary_splitted = summary.split()
             for term in summary_splitted:
+                if term not in self.index["summaries"]:
+                    self.index["summaries"][term] = {}
                 if document["id"] in self.index["summaries"][term]:
                     continue
                 if term not in term_freq:
@@ -238,10 +245,10 @@ class Index:
         """
         Check if the add and remove is correct
         """
-
+        stemmer = PorterStemmer()
         dummy_document = {
             'id': '100',
-            'stars': ['tim', 'henry'],
+            'stars': ['tim', stemmer.stem('henry')],
             'genres': ['drama', 'crime'],
             'summaries': ['good']
         }
@@ -259,7 +266,7 @@ class Index:
             print('Add is incorrect, tim')
             return
 
-        if (set(index_after_add[Indexes.STARS.value]['henry']).difference(set(index_before_add[Indexes.STARS.value]['henry']))
+        if (set(index_after_add[Indexes.STARS.value][stemmer.stem('henry')]).difference(set(index_before_add[Indexes.STARS.value][stemmer.stem('henry')]))
                 != {dummy_document['id']}):
             print('Add is incorrect, henry')
             return
@@ -419,10 +426,10 @@ if __name__ == "__main__":
     with open(os.getcwd() + "/Logic/Data/PreprocessedDocuments.json", "r") as file:
         preprocessed_documents = json.load(file)
     my_index = Index(preprocessed_documents)
-    # my_index.store_index("documents")
-    # my_index.store_index("stars")
-    # my_index.store_index("genres")
-    # my_index.store_index("summaries")
+    my_index.store_index("documents")
+    my_index.store_index("stars")
+    my_index.store_index("genres")
+    my_index.store_index("summaries")
     my_index.check_add_remove_is_correct()
     print(my_index.check_if_index_loaded_correctly("documents", my_index.index["documents"]))
     print(my_index.check_if_index_loaded_correctly("stars", my_index.index["stars"]))

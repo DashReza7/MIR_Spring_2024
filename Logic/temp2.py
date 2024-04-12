@@ -3,9 +3,8 @@ import random
 import json
 import os
 import re
+from nltk import PorterStemmer
 
-
-foo = {1: 50, 2: 38}
-bar = foo.get(2, None)
-print(bar)
+stemmer = PorterStemmer()
+print(stemmer.stem("williams"))
 
