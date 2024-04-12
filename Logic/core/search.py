@@ -1,9 +1,10 @@
 import json
 import numpy as np
-from preprocess import Preprocessor
-from scorer import Scorer
 import os
 import sys
+sys.path.append(os.getcwd() + "/Logic/core/")
+from preprocess import Preprocessor
+from scorer import Scorer
 sys.path.append(os.getcwd() + "/Logic/core/indexer/")
 from indexer.indexes_enum import Indexes, Index_types
 from indexer.index_reader import Index_reader
@@ -17,19 +18,19 @@ class SearchEngine:
         """
         path = os.getcwd() + "/Logic/Data/"
         self.document_indexes = {
-            Indexes.STARS: Index_reader(path, Indexes.STARS),
-            Indexes.GENRES: Index_reader(path, Indexes.GENRES),
-            Indexes.SUMMARIES: Index_reader(path, Indexes.SUMMARIES)
+            Indexes.STARS.value: Index_reader(path, Indexes.STARS),
+            Indexes.GENRES.value: Index_reader(path, Indexes.GENRES),
+            Indexes.SUMMARIES.value: Index_reader(path, Indexes.SUMMARIES)
         }
         self.tiered_index = {
-            Indexes.STARS: Index_reader(path, Indexes.STARS, Index_types.TIERED),
-            Indexes.GENRES: Index_reader(path, Indexes.GENRES, Index_types.TIERED),
-            Indexes.SUMMARIES: Index_reader(path, Indexes.SUMMARIES, Index_types.TIERED)
+            Indexes.STARS.value: Index_reader(path, Indexes.STARS, Index_types.TIERED),
+            Indexes.GENRES.value: Index_reader(path, Indexes.GENRES, Index_types.TIERED),
+            Indexes.SUMMARIES.value: Index_reader(path, Indexes.SUMMARIES, Index_types.TIERED)
         }
         self.document_lengths_index = {
-            Indexes.STARS: Index_reader(path, Indexes.STARS, Index_types.DOCUMENT_LENGTH),
-            Indexes.GENRES: Index_reader(path, Indexes.GENRES, Index_types.DOCUMENT_LENGTH),
-            Indexes.SUMMARIES: Index_reader(path, Indexes.SUMMARIES, Index_types.DOCUMENT_LENGTH)
+            Indexes.STARS.value: Index_reader(path, Indexes.STARS, Index_types.DOCUMENT_LENGTH),
+            Indexes.GENRES.value: Index_reader(path, Indexes.GENRES, Index_types.DOCUMENT_LENGTH),
+            Indexes.SUMMARIES.value: Index_reader(path, Indexes.SUMMARIES, Index_types.DOCUMENT_LENGTH)
         }
         self.metadata_index = Index_reader(path, Indexes.DOCUMENTS, Index_types.METADATA)
 
@@ -60,6 +61,9 @@ class SearchEngine:
         preprocessor = Preprocessor([query])
         query = preprocessor.preprocess()[0].split()
 
+        if max_results == -1:
+            max_results = self.metadata_index["document_count"]
+        
         scores = {}
         if safe_ranking:
             self.find_scores_with_safe_ranking(query, method, weights, scores)
@@ -71,6 +75,7 @@ class SearchEngine:
         self.aggregate_scores(weights, scores, final_scores)
         
         result = sorted(final_scores.items(), key=lambda x: x[1], reverse=True)
+        print(len(result))
         if max_results is not None:
             result = result[:max_results]
 
@@ -116,7 +121,7 @@ class SearchEngine:
         """
         for field in weights:
             for tier in ["first_tier", "second_tier", "third_tier"]:
-                scorer = Scorer(self.tiered_index[field].index[tier], self.metadata_index.index["document_count"])
+                scorer = Scorer(self.tiered_index[field.value].index[tier], self.metadata_index.index["document_count"])
                 if method == "OkapiBM25":
                     score = scorer.compute_socres_with_okapi_bm25(query, self.metadata_index.index["averge_document_length"][field.value], self.document_lengths_index[field].index)
                 else:
@@ -142,7 +147,7 @@ class SearchEngine:
         """
 
         for field in weights:
-            scorer = Scorer(self.document_indexes[field].index, self.metadata_index.index["document_count"])
+            scorer = Scorer(self.document_indexes[field.value].index, self.metadata_index.index["document_count"])
             if method == "OkapiBM25":
                 score = scorer.compute_socres_with_okapi_bm25(query, self.metadata_index.index['averge_document_length'][field.value], self.document_lengths_index[field].index)
             else:

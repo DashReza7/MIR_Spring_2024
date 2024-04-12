@@ -75,9 +75,13 @@ class Snippet:
         for (doc_pos, query_pos) in occs:
             cnt = 0
             for i in range(doc_pos - 1, doc_pos - k - 1, -1):
+                if i < 0:
+                    break
                 if doc_tokens_stemmed[i] in query_tokens_stemmed:
                     cnt += 1
             for i in range(doc_pos + 1, doc_pos + k + 1, 1):
+                if i >= len(doc_tokens_stemmed):
+                    break
                 if doc_tokens_stemmed[i] in query_tokens_stemmed:
                     cnt += 1
             foo[query_pos][doc_pos] = cnt
@@ -133,7 +137,9 @@ class Snippet:
                     window_str += doc_tokens[i] + " "
             window_str = window_str.strip()
             window_strings.append(window_str)
-        return "...".join(window_strings), not_exist_words
+        result = "...".join(window_strings)
+        print(result)
+        return (result, not_exist_words)
 
 if __name__ == "__main__":
     query = "stumble stupid floats flying machines"

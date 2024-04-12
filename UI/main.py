@@ -1,12 +1,17 @@
 import streamlit as st
+import os
 import sys
-
-sys.path.append("../")
-from Logic import utils
+# sys.path.append(os.getcwd() + "/Logic/")
+path = os.getcwd()[:-3] + "\\Logic\\"
+path = os.getcwd() + "\\Logic\\"
+print(path)
+sys.path.append(path)
+# from Logic import utils
+import utils
 import time
 from enum import Enum
 import random
-from Logic.core.snippet import Snippet
+from snippet import Snippet
 
 snippet_obj = Snippet(
     number_of_words_on_each_side=5
@@ -26,6 +31,7 @@ class color(Enum):
 def get_summary_with_snippet(movie_info, query):
     summary = movie_info["first_page_summary"]
     snippet, not_exist_words = snippet_obj.find_snippet(summary, query)
+    print(not_exist_words)
     if "***" in snippet:
         snippet = snippet.split()
         for i in range(len(snippet)):
@@ -51,14 +57,15 @@ def search_handling(
     search_method,
 ):
     if search_button:
-        corrected_query = utils.correct_text(search_term, utils.movies_dataset)
+        search_term_lowered = search_term.lower()
+        corrected_query = utils.correct_text(search_term)
 
-        if corrected_query != search_term:
+        if corrected_query != search_term_lowered:
             st.warning(f"Your search terms were corrected to: {corrected_query}")
             search_term = corrected_query
 
         with st.spinner("Searching..."):
-            time.sleep(0.5)  # for showing the spinner! (can be removed)
+            time.sleep(0.2)  # for showing the spinner! (can be removed)
             start_time = time.time()
             result = utils.search(
                 search_term,
@@ -114,6 +121,7 @@ def search_handling(
 
 
 def main():
+    utils.init_utils()
     st.title("Search Engine")
     st.write(
         "This is a simple search engine for IMDB movies. You can search through IMDB dataset and find the most relevant movie to your search terms."

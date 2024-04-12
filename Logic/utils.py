@@ -4,12 +4,23 @@ from core.spell_correction import SpellCorrection
 from core.snippet import Snippet
 from core.indexer.indexes_enum import Indexes, Index_types
 import json
+import os
 
 movies_dataset = None  # TODO
 search_engine = SearchEngine()
 
+def init_utils():
+    with open(os.getcwd() + "/Logic/tests/CrawlerResults/IMDB_Crawled.json", "r") as file:
+        global movies_dataset
+        foo = json.load(file)
+        movies_dataset = dict()
+        for movie in foo:
+            movies_dataset[movie["id"]] = movie
+    global search_engine
+    if search_engine is None:
+        search_engine = SearchEngine()
 
-def correct_text(text: str, all_documents: List[str]) -> str:
+def correct_text(text: str, all_documents: List[str] = None) -> str:
     """
     Correct the give query text, if it is misspelled using Jacard similarity
 
@@ -25,6 +36,9 @@ def correct_text(text: str, all_documents: List[str]) -> str:
         The corrected form of the given text
     """
     # TODO: You can add any preprocessing steps here, if needed!
+    if all_documents == None:
+        with open(os.getcwd() + "/Logic/Data/corpus_for_spell_correction.json", "r") as file:
+            all_documents = json.load(file)
     spell_correction_obj = SpellCorrection(all_documents)
     text = spell_correction_obj.spell_check(text)
     return text
@@ -32,9 +46,9 @@ def correct_text(text: str, all_documents: List[str]) -> str:
 
 def search(
     query: str,
-    max_result_count: int,
+    max_result_count: int = 10,
     method: str = "ltn-lnn",
-    weights: list = [0.3, 0.3, 0.4],
+    weights: list = [0.3, 0.3, 1],
     should_print=False,
     preferred_genre: str = None,
 ):
@@ -61,7 +75,13 @@ def search(
     list
     Retrieved documents with snippet
     """
-    weights = ...  # TODO
+    # weights = ...  # TODO
+    weights = {
+        Indexes.STARS: weights[0],
+        Indexes.GENRES: weights[1],
+        Indexes.SUMMARIES: weights[2]
+    }
+    global search_engine
     return search_engine.search(
         query, method, weights, max_results=max_result_count, safe_ranking=True
     )
